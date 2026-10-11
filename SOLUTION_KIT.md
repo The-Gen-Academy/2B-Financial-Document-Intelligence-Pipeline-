@@ -225,11 +225,11 @@ The key instruction is "ONLY the context provided below." This is what prevents 
 
 **The three metrics.**
 
-**Faithfulness** measures whether the generated answer is grounded in the retrieved context. RAGAS identifies each factual claim in the answer and checks whether it can be inferred from the retrieved chunks. A score of 1.0 means every claim in the answer is supported by context. A score of 0.75 means 25% of claims in the answer are not supported — they came from the model's prior knowledge (hallucination).
+**Faithfulness** measures whether the generated answer is grounded in the retrieved context. RAGAS identifies each factual claim in the answer and checks whether it can be inferred from the retrieved chunks. A score of 1.0 means every claim in the answer is supported by context. A score of 0.40 indicates lower overall grounding in the retrieved context — they came from the model's prior knowledge (hallucination).
 
-**Context Precision** measures whether the retrieved chunks are relevant to the question. For each retrieved chunk, RAGAS asks: "Is this chunk useful for answering the question?" A score of 0.00 means none of the retrieved chunks were useful. A score of 0.95 means 95% of retrieved chunks were relevant.
+**Context Precision** measures whether the retrieved chunks are relevant to the question. For each retrieved chunk, RAGAS asks: "Is this chunk useful for answering the question?" A score of 0.00 means none of the retrieved chunks were useful. A score of 0.925 means 92.5% of retrieved chunks were relevant.
 
-**Context Recall** measures whether the retrieval found everything needed to answer the question fully. RAGAS compares the retrieved context against the ground truth answer and asks: "Could someone have generated this ground truth answer from the retrieved chunks?" A score of 1.00 means the retrieved chunks contain all the information present in the ground truth. A score of 0.775 means 22.5% of the information in the ground truth was not present in any retrieved chunk.
+**Context Recall** measures whether the retrieval found everything needed to answer the question fully. RAGAS compares the retrieved context against the ground truth answer and asks: "Could someone have generated this ground truth answer from the retrieved chunks?" A score of 1.00 means the retrieved chunks contain all the information present in the ground truth. A score of 0.800 means 22.5% of the information in the ground truth was not present in any retrieved chunk.
 
 **The RAGAS judge LLM.** RAGAS uses `gpt-4o-mini` (configured via `LangchainLLMWrapper`) to make these judgments. It also uses OpenAI embeddings (`text-embedding-3-small`) internally for its answer relevancy metric. This is separate from the HuggingFace embeddings used for Pinecone retrieval.
 
@@ -239,16 +239,16 @@ The key instruction is "ONLY the context provided below." This is what prevents 
 
 ```
            Metric  A: Fixed (no rerank)  B: Semantic (no rerank)  C: Semantic + Reranking
-     Faithfulness                  0.750                    1.000                    0.988
-Context Precision                  0.000                    0.725                    0.950
-   Context Recall                  0.000                    0.775                    1.000
+     Faithfulness                  0.400                    1.000                    0.965
+Context Precision                  0.000                    0.725                    0.925
+   Context Recall                  0.000                    0.800                    1.000
 ```
 
-**Experiment A (Fixed, no rerank):** Context Precision and Recall are both 0.00. The fixed-size chunker cut every financial table in the two 10-K filings into fragments. None of the 12,142 chunks alone contained enough information to answer the 10 evaluation questions. Faithfulness is 0.75 — not 0.0 — because `gpt-4o-mini` was still generating plausible-sounding answers from the fragmented context, drawing on prior knowledge about Apple's finances rather than the retrieved text. This is precisely the hallucination risk that RAG is supposed to prevent.
+**Experiment A (Fixed, no rerank):** Context Precision and Recall are both 0.00. The fixed-size chunker cut every financial table in the two 10-K filings into fragments. None of the 12,142 chunks alone contained enough information to answer the 10 evaluation questions. Faithfulness is 0.40 — not 0.0 — because `gpt-4o-mini` was still generating plausible-sounding answers from the fragmented context, drawing on prior knowledge about Apple's finances rather than the retrieved text. This is precisely the hallucination risk that RAG is supposed to prevent.
 
-**Experiment B (Semantic, no rerank):** A step-change improvement. Context Precision jumps to 0.725 and Recall to 0.775. Semantic chunking kept financial tables and analysis paragraphs intact. The embedding model could now produce meaningful vectors from complete chunks, and Pinecone could retrieve genuinely relevant passages. Faithfulness reaches 1.000 — when the context is relevant and complete, the LLM has no reason to hallucinate.
+**Experiment B (Semantic, no rerank):** A step-change improvement. Context Precision jumps to 0.725 and Recall to 0.800. Semantic chunking kept financial tables and analysis paragraphs intact. The embedding model could now produce meaningful vectors from complete chunks, and Pinecone could retrieve genuinely relevant passages. Faithfulness reaches 1.000 — when the context is relevant and complete, the LLM has no reason to hallucinate.
 
-**Experiment C (Semantic + rerank):** Further improvement on top of an already good baseline. Context Precision reaches 0.950 — the CrossEncoder removed the 27.5% noise that semantic search alone was still surfacing. Context Recall reaches 1.000 — perfect coverage, meaning the pipeline found everything it needed to answer every question fully. Faithfulness stays near-perfect at 0.988.
+**Experiment C (Semantic + rerank):** Further improvement on top of an already good baseline. Context Precision reaches 0.925 — the CrossEncoder removed some of the irrelevant results that semantic search alone was still surfacing. Context Recall reaches 1.000 — perfect coverage, meaning the pipeline found everything it needed to answer every question fully. Faithfulness stays near-perfect at 0.965.
 
 **The key insight.** Chunking strategy determines whether retrieval is even possible. No amount of reranking, prompt engineering, or LLM power can compensate for a chunking strategy that destroys the information content of financial tables. Fix the chunking first. Reranking then provides a meaningful incremental improvement.
 

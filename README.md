@@ -45,13 +45,13 @@ The pipeline moves through seven stages: data ingestion → preprocessing → du
 
 | Metric | A: Fixed (no rerank) | B: Semantic (no rerank) | C: Semantic + Reranking |
 |---|---|---|---|
-| **Faithfulness** | 0.750 | 1.000 | 0.988 |
-| **Context Precision** | 0.000 | 0.725 | **0.950** |
-| **Context Recall** | 0.000 | 0.775 | **1.000** |
+| **Faithfulness** | 0.400 | 1.000 | 0.965 |
+| **Context Precision** | 0.000 | 0.725 | **0.925** |
+| **Context Recall** | 0.000 | 0.800 | 1.000 |
 
 **Winner: Semantic Chunking + CrossEncoder Reranking**
 
-Fixed chunking scores 0.00 on both retrieval metrics — its 431-char chunks cut financial tables mid-row, making the numbers meaningless without their headers. Semantic chunking fixes this, and reranking then eliminates the remaining 27.5% noise.
+Fixed chunking scores 0.00 on both retrieval metrics — its 431-char chunks cut financial tables mid-row, making the numbers meaningless without their headers. Semantic chunking fixes this, and reranking then eliminates the remaining retrieval noise.
 
 ---
 
